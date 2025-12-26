@@ -41,5 +41,5 @@
 * **Drift Detection**: `monitor.py`를 실행하면 `Evidently` 라이브러리가 기준 데이터(Reference)와 현재 데이터(Current) 간의 분포 차이를 분석합니다. 이를 `reports/` 폴더에 타임스탬프와 함께 저장합니다.
 * **Auto-Retraining**: 데이터 드리프트가 감지되면 자동으로 파이프라인이 전체 데이터에 대해 모델을 재학습하고, 새로운 모델을 `models/` 폴더에 타임스탬프와 함께 저장합니다.
 
-### 4. 링크
+## 📖 링크
 * Link: https://kunho192.tistory.com/14
