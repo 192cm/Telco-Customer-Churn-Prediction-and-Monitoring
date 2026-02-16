@@ -1,45 +1,49 @@
-# 📉 Telco Customer Churn Prediction & Monitoring Pipeline
+# 🛒 Retail Demand Forecasting & Inventory Optimization
 
 ## 📖 프로젝트 개요 (Project Overview)
-이 프로젝트는 통신사 고객 데이터를 분석하여 **고객 이탈(Churn)을 예측**하는 머신러닝 모델을 개발하고, 실제 운영 환경을 가정하여 **데이터 드리프트(Data Drift)를 모니터링하고 자동으로 모델을 재학습**시키는 파이프라인을 구축한 프로젝트입니다.
+이 프로젝트는 소매 기업의 2년 치 과거 판매 데이터와 프로모션, 날씨, 경쟁사 가격 등 다양한 내·외부 요인을 분석하여 **미래 30일간의 수요를 예측(Demand Forecasting)**하는 딥러닝 모델을 개발한 프로젝트입니다.
 
-단순한 예측 모델링을 넘어, 시간의 흐름에 따라 데이터 분포가 변할 때 모델의 성능을 유지하기 위한 **MLOps(Machine Learning Operations)** 관점의 접근을 시도했습니다.
+단순한 판매량 추정이 아닌, 시계열 데이터의 장기 의존성과 복합적인 상호작용을 학습할 수 있는 **Temporal Fusion Transformer(TFT)** 모델을 도입했습니다. 이를 통해 단순한 점 예측(Point Prediction)이 아닌 **구간 예측(Quantile Prediction)**을 수행하여 수요의 불확실성을 정량화하고, 재고 최적화를 통한 비즈니스 비용 절감을 목표로 했습니다.
 
 ## 🎯 목표 (Objectives)
-* **이탈 예측**: 고객의 인구통계학적 정보와 서비스 가입 정보를 바탕으로 이탈 여부 분류
-* **모델 최적화**: XGBoost 알고리즘을 사용하여 예측 성능(특히 Recall, F1-score) 최적화
-* **지속적 모니터링**: `Evidently AI`를 활용하여 데이터 분포 변화(Drift) 감지 및 성능 저하 시 자동 재학습 로직 구현
+* **중·단기 수요 예측**: 향후 **30일(Short-to-Mid term)** 간의 일별 판매량을 시계열적으로 예측하여 재고 운영 계획 지원
+* **예측 성능 확보**: MAPE(오차율) 10% 수준 달성 및 RMSE 기준 Baseline(단순 이동평균) 대비 **15% 이상 성능 개선**
+* **불확실성 관리**: **Quantile Regression(분위수 회귀)**을 통해 95% 신뢰 구간을 제공하여 과학적인 안전 재고(Safety Stock) 산정 근거 마련
 
 ## 🛠️ 기술 스택 (Tech Stack)
-* **Language**: Python 3.x
+* **Language**: Python 3.9+
 * **Data Analysis**: Pandas, NumPy
-* **Visualization**: Matplotlib, Seaborn
-* **Machine Learning**: Scikit-learn, XGBoost
-* **MLOps & Monitoring**: Evidently AI, Joblib
+* **Visualization**: Matplotlib, Seaborn, TensorBoard
+* **Deep Learning**: PyTorch, PyTorch Lightning
+* **Time Series Modeling**: PyTorch Forecasting (TFT)
+* **Optimization**: Optuna (Bayesian Optimization)
 
 ## 📂 파일 구성 (Project Structure)
-* `Telco-Customer-Churn.ipynb`: 데이터 전처리(EDA), 파이프라인 구축, 모델 학습 및 평가 과정을 담은 주피터 노트북
-* `monitor.py`: 운영 환경을 시뮬레이션하여 데이터 드리프트를 감지하고, 필요 시 모델을 재학습시키는 자동화 스크립트
-* `WA_Fn-UseC_-Telco-Customer-Churn.csv`: 학습에 사용된 데이터셋 (Kaggle)
-* `models/`: 학습된 모델(`.pkl`)이 저장되는 디렉토리
-* `reports/`: 데이터 드리프트에 대한 report가 저장되는 디렉토리
+* `retail-store-inventoty-and-demand-forecasting-using-TFT.ipynb`: 데이터 전처리, TimeSeriesDataSet 구축, TFT 모델 학습, Optuna 튜닝 및 결과 시각화 전 과정을 담은 주피터 노트북
+* `sales_data`: 학습에 사용된 데이터셋
+* `lightning_logs/`: 학습 로그 및 체크포인트 저장 디렉토리
+* `saved_models/`: 최적화된 모델이 저장되는 디렉토리
 
 ## 🚀 주요 기능 및 과정 (Key Features)
 
 ### 1. 데이터 전처리 및 분석 (EDA)
-* 결측치 처리 및 `TotalCharges` 수치형 변환
-* 범주형 변수(One-Hot Encoding)와 수치형 변수(Standard Scaling) 처리를 위한 `Sklearn Pipeline` 구축
-* 불균형 데이터 처리를 고려한 학습
+* **Data Leakage 방지**: TFT 입력 구조에 맞춰 변수 유형 세분화 (Static, Known Inputs, Unknown Inputs)
+* **파생 변수 생성**: 시계열 인덱스(`time_idx`), 경쟁사 대비 가격 비율(`Price_Ratio`), 가격 세그먼트(`Price_Segment`) 생성
+* **데이터 변환**: 매장/제품별 스케일 조정을 위한 `GroupNormalizer` 및 이분산성 완화를 위한 로그 변환(`np.log1p`) 적용
 
 ### 2. 모델링 (Modeling)
-* **Model**: XGBoost Classifier
-* **Evaluation Metric**:
-    * **F1-Score**: [0.63]
-    * **Recall**: [0.75] (이탈 고객을 놓치지 않는 것이 중요하므로 Recall을 중요 지표로 선정)
+* **Model**: Temporal Fusion Transformer (TFT)
+* **Optimization**:
+    * **Optuna**: 베이지안 최적화를 통해 `Hidden Size`, `Attention Heads`, `Learning Rate` 등 하이퍼파라미터 튜닝
+    * **Loss Function**: `QuantileLoss`를 사용하여 예측 구간(Prediction Interval) 학습
 
-### 3. 모니터링 및 재학습 (Monitoring & Retraining)
-* **Drift Detection**: `monitor.py`를 실행하면 `Evidently` 라이브러리가 기준 데이터(Reference)와 현재 데이터(Current) 간의 분포 차이를 분석합니다. 이를 `reports/` 폴더에 타임스탬프와 함께 저장합니다.
-* **Auto-Retraining**: 데이터 드리프트가 감지되면 자동으로 파이프라인이 전체 데이터에 대해 모델을 재학습하고, 새로운 모델을 `models/` 폴더에 타임스탬프와 함께 저장합니다.
+### 3. 성과 및 해석 (Performance & Interpretation)
+* **Performance Improvement**:
+    * **RMSE**: [9.14] (Baseline 61.06 대비 **85.03% 성능 향상**)
+    * **MAPE**: [10.15%] (목표치인 10%에 근접한 높은 정확도 달성)
+* **Interpretability**:
+    * **Static**: `Product ID`(35%)가 카테고리보다 높은 중요도를 가짐
+    * **Encoder**: `Competitor Pricing` & `Price`가 과거 판매량보다 높은 중요도를 보이며, **가격 경쟁력**이 수요의 핵심 동인임을 규명
 
 ## 📖 링크
-* Link: https://kunho192.tistory.com/14
+* Link: https://kunho192.tistory.com/15
